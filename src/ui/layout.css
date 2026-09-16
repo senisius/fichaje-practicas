@@ -1,0 +1,333 @@
+/* Armazón: cabecera, contenido en una o dos columnas y pie. */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ---------- Cabecera ---------- */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding-top: env(safe-area-inset-top, 0px);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-header-inner {
+  display: grid;
+  /* Móvil: fila 1 = marca + menú; fila 2 = logo + usuario. La columna del menú solo mide el botón. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'brand brand menu'
+    'logo user user';
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 4px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px var(--gutter-right) 8px var(--gutter-left);
+}
+
+.brand {
+  grid-area: brand;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand .app-icon {
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El logo va tal cual: altura fija, anchura automática y fondo claro siempre. */
+.uab-logo {
+  grid-area: logo;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: #ffffff;
+  flex-shrink: 0;
+  /* Alinea el logo con el icono de la app en móvil. */
+  margin-left: -6px;
+}
+
+.uab-logo img {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: none;
+}
+
+.header-user {
+  grid-area: user;
+  justify-self: end;
+  min-width: 0;
+  max-width: 100%;
+  text-align: right;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-user strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.header-menu {
+  grid-area: menu;
+  justify-self: end;
+  position: relative;
+}
+
+@media (min-width: 720px) {
+  .app-header-inner {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand logo user menu';
+    column-gap: 16px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .uab-logo {
+    margin-left: 4px;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
+    border-radius: 0 6px 6px 0;
+  }
+
+  .header-user {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .header-user > * {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-user-sep {
+    display: none;
+  }
+}
+
+@media (min-width: 720px) and (prefers-color-scheme: dark) {
+  .uab-logo {
+    border-left: 0;
+    padding-left: 6px;
+    border-radius: 6px;
+  }
+}
+
+/* ---------- Menú de usuario ---------- */
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.menu-button:hover {
+  background: var(--surface-2);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.menu-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: menu-in 0.12s ease-out;
+}
+
+.menu-header {
+  padding: 10px 12px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+  min-width: 0;
+}
+
+.menu-header p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.menu-item:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.menu-item:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.menu-item .icon {
+  color: var(--text-muted);
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--border);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------- Banner sin conexión ---------- */
+
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px var(--gutter-right) 8px var(--gutter-left);
+  background: var(--warn-soft);
+  border-top: 1px solid var(--warn-border);
+  color: var(--warn-text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ---------- Contenido ---------- */
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px var(--gutter-right) 32px var(--gutter-left);
+}
+
+.app-main:focus {
+  outline: none;
+}
+
+.page-alerts {
+  margin-bottom: 16px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.layout-side,
+.layout-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 960px) {
+  .app-main {
+    padding-top: 24px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+}
+
+/* ---------- Pie ---------- */
+
+.app-footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 16px var(--gutter-right) calc(16px + env(safe-area-inset-bottom, 0px)) var(--gutter-left);
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.app-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-footer strong {
+  color: var(--text);
+}

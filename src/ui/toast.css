@@ -1,0 +1,114 @@
+.toasts {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 0 var(--gutter-right) calc(16px + env(safe-area-inset-bottom, 0px)) var(--gutter-left);
+  pointer-events: none;
+}
+
+.toast-region {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 440px;
+  padding: 6px 6px 6px 14px;
+  border-radius: var(--radius);
+  background: #17231d;
+  color: #f1f6f3;
+  box-shadow: var(--shadow-lg);
+  font-size: 15px;
+  /* Solo el botón de cerrar recibe toques: el resto deja pasar el toque al control de debajo */
+  pointer-events: none;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast-close {
+  pointer-events: auto;
+}
+
+/* En móvil los diálogos son hojas inferiores: los avisos van por encima de su pie (Cancelar/Guardar) */
+@media (max-width: 639px) {
+  html.modal-open .toasts {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.toast-success > .icon {
+  color: #6fdca5;
+}
+
+.toast-info > .icon {
+  color: #9cc6f2;
+}
+
+.toast-error {
+  background: #5c1611;
+}
+
+.toast-error > .icon {
+  color: #ffb4ad;
+}
+
+.toast-message {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+
+.toast-close.btn-ghost {
+  color: inherit;
+}
+
+.toast-close.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  .toast {
+    background: #e7efeb;
+    color: #0f1713;
+  }
+
+  .toast-success > .icon {
+    color: #0f7b4a;
+  }
+
+  .toast-info > .icon {
+    color: #1f5a96;
+  }
+
+  .toast-error {
+    background: #ffdad6;
+  }
+
+  .toast-error > .icon {
+    color: #b42318;
+  }
+
+  .toast-close.btn-ghost:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}

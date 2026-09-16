@@ -1,0 +1,309 @@
+/* Tarjetas de la columna lateral: progreso, fichaje, en vivo y backup. */
+
+/* ---------- Progreso ---------- */
+
+.progress-hero {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.progress-done {
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-target {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.progress-pct {
+  margin-left: auto;
+  font-size: 22px;
+  font-weight: 750;
+  color: var(--brand-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* En móviles de 360–420 px, "119 h 23 min de 298 h" y el porcentaje caben en una línea */
+@media (max-width: 420px) {
+  .progress-done {
+    font-size: 26px;
+  }
+
+  .progress-pct {
+    font-size: 18px;
+  }
+}
+
+.progress-bar {
+  position: relative;
+  display: flex;
+  height: 12px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--progress-fill);
+  transition: width 0.4s ease;
+}
+
+/* Rayas del mismo color que el relleno (contraste suficiente con la pista), separadas por huecos */
+.progress-live {
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--progress-fill) 0 3px,
+    transparent 3px 7px
+  );
+}
+
+.progress-footnote {
+  margin-top: 12px;
+}
+
+.progress-open {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--brand-text);
+  font-weight: 600;
+}
+
+/* La cifra no se parte; la aclaración entre paréntesis pasa a la línea siguiente si no cabe */
+.progress-open .tabular {
+  white-space: nowrap;
+}
+
+.progress-open .muted {
+  font-weight: 400;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.stat {
+  min-width: 0;
+}
+
+.stat dt {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.stat dd {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.stat-wide {
+  grid-column: 1 / -1;
+}
+
+.clock-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clock-note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.clock-note-actions .btn {
+  margin-left: auto;
+}
+
+.lost-note {
+  margin: 6px 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.goal-reached {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--brand-text);
+  font-weight: 700;
+}
+
+/* ---------- Fichaje (student) ---------- */
+
+.clock-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.clock-card.is-running {
+  border-color: var(--brand-soft-border);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 3px 0 var(--brand);
+}
+
+.clock-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-subtle);
+  flex-shrink: 0;
+}
+
+.status-dot.is-live {
+  background: var(--brand-text);
+  animation: live-pulse 2s ease-out infinite;
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-text) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+.clock-time {
+  font-size: clamp(44px, 15vw, 60px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-skeleton {
+  margin: 0 auto;
+}
+
+.clock-time.is-idle {
+  color: var(--text-subtle);
+}
+
+.clock-sub {
+  margin-top: 6px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.btn-clock {
+  min-height: 64px;
+  border-radius: 16px;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+}
+
+.clock-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.clock-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- En vivo (supervisora) ---------- */
+
+.live-card.is-running {
+  border-color: var(--brand-soft-border);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 3px 0 var(--brand);
+}
+
+.live-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 650;
+}
+
+.live-elapsed {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-card .btn,
+.live-card .notice {
+  margin-top: 14px;
+}
+
+/* ---------- Backup ---------- */
+
+.backup {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.backup > .icon {
+  margin-top: 1px;
+}
+
+.backup strong {
+  color: var(--text);
+}
+
+.backup.is-stale {
+  background: var(--warn-soft);
+  border-color: var(--warn-border);
+  color: var(--text);
+}
+
+.backup.is-stale > .icon {
+  color: var(--warn-text);
+}

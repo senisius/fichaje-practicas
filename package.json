@@ -1,0 +1,48 @@
+{
+  "name": "fichaje-practicas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:emu": "vite --mode emulator",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-fichaje",
+    "seed": "node scripts/seed-emulator.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "oxlint",
+    "typecheck": "tsc -b",
+    "test": "vitest run --config vitest.config.ts",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-fichaje \"vitest run --config vitest.rules.config.ts\"",
+    "test:integration": "firebase emulators:exec --only auth,firestore --project demo-fichaje \"vitest run --config vitest.integration.config.ts\"",
+    "icons": "node scripts/gen-icons.mjs",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore",
+    "deploy:rules": "firebase deploy --only firestore",
+    "backup": "node scripts/backup.mjs",
+    "e2e": "node scripts/e2e.mjs"
+  },
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "date-fns-tz": "^3.2.0",
+    "firebase": "^12.19.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "firebase-admin": "^14.4.0",
+    "firebase-tools": "^15.30.1",
+    "oxlint": "^1.81.0",
+    "sharp": "^0.35.4",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

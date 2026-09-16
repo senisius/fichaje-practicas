@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Fichaje Prácticas</title>
+  <!-- Versión simplificada del icono para 16–32 px: sin arco de progreso -->
+  <rect width="512" height="512" rx="112" fill="#0F7B4A"/>
+  <g fill="#FFFFFF">
+    <rect x="200" y="36" width="112" height="56" rx="20"/>
+    <rect x="228" y="80" width="56" height="52" rx="8"/>
+    <circle cx="256" cy="292" r="172"/>
+  </g>
+  <path d="M176 298l56 56 104-112" fill="none" stroke="#0F7B4A" stroke-width="60" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

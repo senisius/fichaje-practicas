@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  },
+  "overrides": [
+    {
+      // El contrato (docs/CONTRATO.md) fija que los hooks de datos se exportan junto al provider.
+      "files": ["src/data/AppDataProvider.tsx"],
+      "rules": { "react/only-export-components": "off" }
+    }
+  ]
+}

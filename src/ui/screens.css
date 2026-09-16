@@ -1,0 +1,137 @@
+/* Pantallas a página completa: carga, login, sin perfil, configuración y error. */
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) var(--gutter-right) calc(24px + env(safe-area-inset-bottom, 0px))
+    var(--gutter-left);
+}
+
+.screen-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.screen-inner-wide {
+  max-width: 640px;
+}
+
+.screen-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.screen-brand .app-icon {
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+}
+
+.screen-title {
+  font-size: 26px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.screen-subtitle {
+  color: var(--text-muted);
+}
+
+.screen-card {
+  padding: 24px 20px;
+}
+
+.screen-card-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.screen-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
+.screen-icon-warn {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+}
+
+.screen-icon-danger {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+.screen-disclaimer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 420px;
+  margin-inline: auto;
+}
+
+.screen-disclaimer strong {
+  color: var(--text);
+}
+
+.loading-screen {
+  gap: 16px;
+  color: var(--text-muted);
+}
+
+.loading-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 420px;
+  padding: 10px 14px;
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  text-align: left;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.steps li::marker {
+  font-weight: 700;
+  color: var(--brand-text);
+}
+
+.error-detail {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+@media (min-width: 480px) {
+  .screen-card {
+    padding: 28px;
+  }
+}

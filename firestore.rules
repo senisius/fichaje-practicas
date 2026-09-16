@@ -1,0 +1,227 @@
+rules_version = '2';
+
+// Reglas de Fichaje Prácticas. Especificación: docs/CONTRATO.md (manda) y docs/PROPUESTA.md §4.
+// Todo lo que no se permite aquí de forma explícita queda denegado.
+// Tests: tests/rules (npm run test:rules).
+//
+// Accesos a documentos (get/exists/getAfter/existsAfter). Límite: 10 por operación y 20 por
+// transacción. Recuento pesimista (sin caché ni deduplicación):
+//   START  = crear sesión (3) + crear live (3)                           = 6
+//   STOP   = crear revisión (3) + actualizar sesión (3) + borrar live (2) = 8
+//   nota / anular = crear revisión (3) + actualizar sesión (2)           = 5
+//   manual = 2 · comentario = 2 · lecturas = 3 como mucho
+// Medido en el emulador añadiendo lecturas de relleno: cada operación admite al menos 8 más y
+// una transacción STOP admite 18 lecturas distintas más antes de llegar al límite.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Límites (deben coincidir con src/lib/limits.ts) ----------
+    function maxSessionHours() { return 16; }     // MAX_SESSION_HOURS
+    function maxBackdateHours() { return 744; }   // MAX_BACKDATE_DAYS = 31 días
+    function minManualNote() { return 5; }        // MIN_MANUAL_NOTE
+    function minReason() { return 10; }           // MIN_REASON
+    function maxReason() { return 500; }          // MAX_REASON
+    function maxNote() { return 2000; }           // MAX_NOTE
+    function maxComment() { return 2000; }        // MAX_COMMENT
+
+    // ---------- Identidad y rol ----------
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    // Perfil de quien hace la petición. Si no existe users/{uid}, get() devuelve null,
+    // leer .data da error y la regla deniega: una cuenta sin perfil no puede hacer nada.
+    function profile() { return get(/databases/$(database)/documents/users/$(uid())).data; }
+    function isStudent() { return signedIn() && profile().role == 'student'; }
+    function isSupervisor() { return signedIn() && profile().role == 'supervisor'; }
+    function isBackup() { return signedIn() && profile().role == 'backup'; }
+    function isReader() { return signedIn() && profile().role in ['supervisor', 'backup']; }
+    function isAppUser() { return signedIn() && profile().role in ['student', 'supervisor', 'backup']; }
+
+    // ---------- Rutas ----------
+    function sessPath(id) { return /databases/$(database)/documents/sessions/$(id); }
+    function livePath(u) { return /databases/$(database)/documents/live/$(u); }
+    function revPath(id, rev) { return /databases/$(database)/documents/sessions/$(id)/revisions/$(string(rev)); }
+
+    // ---------- Validación ----------
+    function hours(h) { return duration.value(h, 'h'); }
+    // Texto de como mucho `hi` caracteres y al menos `lo` sin contar espacios de los extremos.
+    // En el emulador size() cuenta unidades UTF-16 (un emoji = 2) y trim() quita lo <= U+0020;
+    // src/lib/validation.ts valida de forma que lo que acepta el cliente también lo acepten aquí.
+    function textOk(s, lo, hi) { return s is string && s.size() <= hi && s.trim().size() >= lo; }
+    // El mapa tiene exactamente estas claves, ni más ni menos.
+    function hasExactly(data, keys) { return data.keys().hasAll(keys) && data.keys().hasOnly(keys); }
+
+    // ---------- users: solo lectura; los perfiles se crean a mano en la consola ----------
+    match /users/{u} {
+      allow read: if isAppUser();
+      allow write: if false;
+    }
+
+    // ---------- sessions ----------
+    match /sessions/{sid} {
+      function n() { return request.resource.data; }
+      function o() { return resource.data; }
+      function changesOnly(keys) { return n().diff(o()).affectedKeys().hasOnly(keys); }
+
+      // El student solo puede leer las suyas; sus consultas deben filtrar por owner.
+      allow read: if isReader() || (isStudent() && o().owner == uid());
+
+      // El id tiene el formato de los ids automáticos (doc(collection(...))): 20 letras y números.
+      // Así un id elegido a mano no puede llevar texto (p. ej. una fórmula) a las exportaciones.
+      allow create: if sid.matches('^[A-Za-z0-9]{20}$')
+        && isStudent()
+        && hasExactly(n(), ['owner', 'method', 'start_time', 'end_time', 'adjusted', 'adjust_reason',
+                            'voided', 'void_reason', 'note', 'rev', 'created_at', 'updated_at'])
+        && n().owner == uid()
+        && n().adjusted == false && n().adjust_reason == ''
+        && n().voided == false && n().void_reason == ''
+        && n().rev is int && n().rev == 0                   // is int: un double -0 también es == 0
+        && n().created_at == request.time
+        && n().updated_at == request.time
+        && (liveStart() || manualEntry());
+
+      // START: hora del servidor y cerrojo live/{uid} creado en el mismo commit.
+      function liveStart() {
+        return n().method == 'live'
+          && n().start_time == request.time
+          && n().end_time == null
+          && textOk(n().note, 0, maxNote())
+          && !exists(livePath(uid()))                          // no había otra sesión abierta
+          && getAfter(livePath(uid())).data.session_id == sid;
+      }
+
+      // Entrada manual: dentro del periodo de prácticas, como mucho 31 días atrás,
+      // nada en el futuro, 16 h como máximo y nota obligatoria.
+      function manualEntry() {
+        let s = n().start_time;
+        let e = n().end_time;
+        return n().method == 'manual'
+          && s is timestamp && e is timestamp
+          && e > s
+          && e <= s + hours(maxSessionHours())
+          && e <= request.time
+          && s >= profile().program_start
+          && s + hours(maxBackdateHours()) >= request.time
+          && textOk(n().note, minManualNote(), maxNote());
+      }
+
+      // Todo cambio sube rev en 1, pone updated_at con la hora del servidor y crea en el mismo
+      // commit la revisión sessions/{sid}/revisions/{rev anterior} (ver su regla más abajo).
+      allow update: if isStudent() && o().owner == uid()
+        && n().rev is int && n().rev == o().rev + 1
+        && n().updated_at == request.time
+        && existsAfter(revPath(sid, o().rev))
+        && (stop() || noteOnly() || voidIt());
+
+      // STOP normal (fin = hora del servidor) o ajustado (fin tecleado, con motivo).
+      // En ambos casos se borra live/{uid} en el mismo commit.
+      function stop() {
+        let end = n().end_time;
+        return o().end_time == null
+          && changesOnly(['end_time', 'adjusted', 'adjust_reason', 'note', 'rev', 'updated_at'])
+          && textOk(n().note, 0, maxNote())
+          && end is timestamp
+          && end <= o().start_time + hours(maxSessionHours())
+          && (
+            (n().adjusted == false && n().adjust_reason == '' && end == request.time)
+            || (n().adjusted == true && textOk(n().adjust_reason, minReason(), maxReason())
+                && end > o().start_time && end < request.time)
+          )
+          && !existsAfter(livePath(uid()));
+      }
+
+      // Editar la nota, en sesiones abiertas o cerradas, nunca en anuladas.
+      function noteOnly() {
+        return o().voided == false
+          && changesOnly(['note', 'rev', 'updated_at'])
+          && textOk(n().note, o().method == 'manual' ? minManualNote() : 0, maxNote());
+      }
+
+      // Anular: solo sesiones cerradas y no anuladas. Irreversible.
+      function voidIt() {
+        return o().end_time != null && o().voided == false
+          && changesOnly(['voided', 'void_reason', 'rev', 'updated_at'])
+          && n().voided == true
+          && textOk(n().void_reason, minReason(), maxReason());
+      }
+
+      allow delete: if false;
+
+      // Historial append-only: copia exacta de la sesión antes de cada cambio.
+      match /revisions/{rid} {
+        allow read: if isReader() || (isStudent() && get(sessPath(sid)).data.owner == uid());
+
+        allow create: if isStudent()
+          && revisionOk(get(sessPath(sid)).data, getAfter(sessPath(sid)).data);
+
+        // `cur` es la sesión antes del commit y `next`, después.
+        function revisionOk(cur, next) {
+          let r = request.resource.data;
+          return cur.owner == uid()
+            && rid == string(cur.rev)
+            && hasExactly(r, ['before', 'at'])
+            && r.before == cur                                 // igualdad de mapas, Timestamps y null incluidos
+            && r.at == request.time
+            && next.rev == cur.rev + 1;                        // la sesión cambia en el mismo commit
+        }
+
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- live: cerrojo de sesión abierta ----------
+    match /live/{owner} {
+      allow read: if isReader() || (isStudent() && owner == uid());
+
+      // Solo junto a una sesión live nueva, abierta y propia (START).
+      allow create: if isStudent() && owner == uid()
+        && hasExactly(request.resource.data, ['session_id'])
+        && request.resource.data.session_id is string
+        && !exists(sessPath(request.resource.data.session_id))
+        && lockedSessionOk(getAfter(sessPath(request.resource.data.session_id)).data);
+
+      function lockedSessionOk(s) {
+        return s.owner == uid() && s.method == 'live' && s.end_time == null;
+      }
+
+      // Un set() sobre un cerrojo existente se evalúa como update: así se impide una 2.ª sesión abierta.
+      allow update: if false;
+
+      // Solo si la sesión a la que apunta queda cerrada en el mismo commit (STOP).
+      allow delete: if isStudent() && owner == uid()
+        && getAfter(sessPath(resource.data.session_id)).data.end_time != null;
+    }
+
+    // ---------- comments: solo la supervisora los crea; append-only ----------
+    match /comments/{cid} {
+      // El student solo puede leer los de sus sesiones; sus consultas deben filtrar por session_owner.
+      allow read: if isReader() || (isStudent() && resource.data.session_owner == uid());
+
+      allow create: if isSupervisor() && commentOk(request.resource.data);
+
+      function commentOk(c) {
+        return hasExactly(c, ['session_id', 'session_owner', 'author_uid', 'text', 'created_at'])
+          && c.author_uid == uid()
+          && c.created_at == request.time
+          && textOk(c.text, 1, maxComment())
+          && c.session_id is string
+          && c.session_owner is string
+          && get(sessPath(c.session_id)).data.owner == c.session_owner;
+      }
+
+      allow update, delete: if false;
+    }
+
+    // ---------- meta/backup: marca del último backup ----------
+    match /meta/backup {
+      allow read: if isAppUser();
+
+      allow create, update: if isBackup()
+        && hasExactly(request.resource.data, ['last_backup_at', 'docs'])
+        && request.resource.data.last_backup_at == request.time
+        && request.resource.data.docs is int
+        && request.resource.data.docs >= 0;
+
+      allow delete: if false;
+    }
+  }
+}

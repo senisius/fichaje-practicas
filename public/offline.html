@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0F7B4A" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0D1310" media="(prefers-color-scheme: dark)" />
+    <title>Sin conexión · Fichaje Prácticas</title>
+    <!-- Página autónoma: la sirve el service worker sin red, así que no carga nada externo. -->
+    <style>
+      :root {
+        --brand: #0f7b4a;
+        --brand-hover: #0b6139;
+        --bg: #f6f8f7;
+        --card: #ffffff;
+        --text: #14201a;
+        --muted: #4a5a52;
+        --border: #d7e0db;
+        --focus: #0b6139;
+        color-scheme: light dark;
+      }
+      /* Mismos colores que el tema oscuro de la app (src/index.css) */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d1310;
+          --card: #141c18;
+          --text: #e5ede9;
+          --muted: #a3b2aa;
+          --border: #28342e;
+          --focus: #5fd39a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: max(24px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      main {
+        width: 100%;
+        max-width: 26rem;
+        padding: 2rem 1.5rem;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--card);
+        text-align: center;
+      }
+      svg {
+        display: block;
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 1rem;
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: 1.5rem;
+        line-height: 1.25;
+      }
+      p {
+        margin: 0 0 0.75rem;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 0.9375rem;
+      }
+      .button {
+        display: inline-block;
+        min-height: 44px;
+        margin: 0.75rem 0 0.5rem;
+        padding: 0.625rem 1.5rem;
+        border-radius: 999px;
+        background: var(--brand);
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .button:hover {
+        background: var(--brand-hover);
+      }
+      .button:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 3px;
+      }
+      footer {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.8125rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg viewBox="0 0 512 512" aria-hidden="true" focusable="false">
+        <rect width="512" height="512" rx="112" fill="#0F7B4A" />
+        <g fill="#FFFFFF">
+          <rect x="216" y="60" width="80" height="40" rx="16" />
+          <rect x="238" y="88" width="36" height="48" rx="6" />
+          <rect x="240" y="120" width="32" height="48" rx="10" transform="rotate(45 256 292)" />
+          <circle cx="256" cy="292" r="150" />
+        </g>
+        <g fill="none" stroke="#0F7B4A" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="256" cy="292" r="104" stroke-width="30" stroke-opacity=".2" />
+          <path d="M256 188A104 104 0 1 1 152 292" stroke-width="30" />
+          <path d="M210 294l34 34 60-66" stroke-width="32" />
+        </g>
+      </svg>
+      <h1>Sin conexión</h1>
+      <p>
+        Para fichar hace falta conexión a internet: la hora de entrada y de salida la pone el
+        servidor, así que no se puede fichar ni ver tus horas sin red.
+      </p>
+      <p class="muted">
+        Comprueba el wifi o los datos móviles. Si tenías una sesión en curso, sigue abierta y la
+        encontrarás al volver.
+      </p>
+      <a class="button" href="/">Reintentar</a>
+      <p class="muted" role="status">La página se recargará sola cuando vuelva la conexión.</p>
+      <footer>Herramienta personal, no oficial de la UAB. No uses aquí tu contraseña de la UAB.</footer>
+    </main>
+    <script>
+      addEventListener('online', () => location.replace('/'))
+    </script>
+  </body>
+</html>

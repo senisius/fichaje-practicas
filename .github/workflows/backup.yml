@@ -1,0 +1,100 @@
+# Backup semanal cifrado de Firestore (ver docs/DESPLIEGUE.md, paso 13).
+# Secrets necesarios (Settings > Secrets and variables > Actions):
+#   FIREBASE_API_KEY_BACKUP, FIREBASE_PROJECT_ID, BACKUP_EMAIL, BACKUP_PASSWORD, BACKUP_PASSPHRASE
+name: Backup semanal
+
+on:
+  schedule:
+    - cron: '17 3 * * 1' # lunes a las 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Copia cifrada de Firestore
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash # bash -eo pipefail
+    steps:
+      # Antes de nada: sin frase de paso no se podría cifrar la copia
+      - name: Comprobar la frase de paso
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Falta el secret BACKUP_PASSPHRASE"
+            exit 1
+          fi
+
+      - name: Descargar el código
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # Solo dependencias de producción: el backup no debe necesitar nada de desarrollo.
+      - name: Instalar dependencias de producción
+        run: npm ci --omit=dev --ignore-scripts
+
+      # --no-mark: meta/backup (el indicador de la app) se actualiza al final, con la copia ya subida
+      - name: Volcar Firestore con la cuenta de backup
+        id: backup
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_BACKUP }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          BACKUP_EMAIL: ${{ secrets.BACKUP_EMAIL }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+        run: node scripts/backup.mjs --no-mark
+
+      # La frase de paso llega por stdin (printf es interno de bash): nunca aparece en la línea de comandos.
+      - name: Cifrar la copia con GPG
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          BACKUP_FILE: ${{ steps.backup.outputs.file }}
+        run: |
+          if [ -z "$BACKUP_FILE" ] || [ ! -f "$BACKUP_FILE" ]; then
+            echo "::error::No se encuentra el fichero generado por el backup"
+            exit 1
+          fi
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 --s2k-digest-algo SHA512 --s2k-count 65011712 \
+            --output "$BACKUP_FILE.gpg" "$BACKUP_FILE"
+          rm -f -- "$BACKUP_FILE"
+          ls -l backups
+
+      - name: Subir la copia cifrada
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.backup.outputs.name }}
+          path: backups/*.json.gpg
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0
+
+      # Solo si todo lo anterior ha ido bien: así el indicador nunca da por buena una copia que no existe
+      - name: Marcar la copia en la app
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY_BACKUP }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          BACKUP_EMAIL: ${{ secrets.BACKUP_EMAIL }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+          BACKUP_DOCS: ${{ steps.backup.outputs.docs }}
+        run: node scripts/backup.mjs --mark-only
+
+      # Pase lo que pase, no queda ningún JSON sin cifrar en el runner.
+      - name: Borrar ficheros sin cifrar
+        if: always()
+        run: rm -f backups/*.json
